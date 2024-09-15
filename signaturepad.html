@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signature Pad</title>
+    <style>
+        #signature-pad {
+            border: 1px solid #000;
+            background-color: #fff;
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+        #controls {
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align: center;">
+        <!-- Canvas element for drawing the signature -->
+        <canvas id="signature-pad"></canvas>
+        
+        <!-- Buttons for clearing and saving the signature -->
+        <div id="controls">
+            <button id="clear" style="margin-right: 10px;">Clear Signature</button>
+            <button id="save">Save Signature</button>
+        </div>
+    </div>
+
+    <!-- Include the Signature Pad library -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+    <script>
+        window.addEventListener('load', function () {
+            const canvas = document.getElementById('signature-pad');
+            const ctx = canvas.getContext('2d');
+            let signaturePad = new SignaturePad(canvas);
+
+            // Adjust canvas size
+            function resizeCanvas() {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext('2d').scale(ratio, ratio);
+                signaturePad.clear(); // Otherwise isEmpty() might return incorrect value
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Clear the signature
+            document.getElementById('clear').addEventListener('click', function () {
+                signaturePad.clear();
+            });
+
+            // Save the signature
+            document.getElementById('save').addEventListener('click', function () {
+                if (signaturePad.isEmpty()) {
+                    alert('Please provide a signature first.');
+                } else {
+                    const dataURL = signaturePad.toDataURL();
+                    
+                    // Send the signature data back to Landbot using postMessage
+                    window.parent.postMessage({
+                        type: 'setCustomField',
+                        name: 'signature',  // Custom field name in Landbot
+                        value: dataURL  // The base64 value to set
+                    }, '*');
+                    
+                    // Notify Landbot to proceed to the next step
+                    window.parent.postMessage({
+                        type: 'customPayload',
+                        payload: 'signature_saved'  // Custom payload to trigger next step
+                    }, '*');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
